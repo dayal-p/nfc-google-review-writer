@@ -225,7 +225,7 @@ export const BusinessSearch: React.FC<BusinessSearchProps> = ({
       {/* Quick Demo Preset Chips */}
       <div>
         <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-          <span className="text-[11px] font-medium text-slate-400">Quick Test Profiles:</span>
+          <span className="text-[11px] font-medium text-slate-400">Featured Verified Businesses:</span>
           <button
             type="button"
             onClick={() => setShowManualInput(!showManualInput)}

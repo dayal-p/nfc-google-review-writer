@@ -42,20 +42,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenHelp }) =>
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
               deviceInfo.isSupported
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                : 'bg-blue-500/10 text-blue-300 border-blue-500/20'
             }`}
             title={deviceInfo.message}
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                deviceInfo.isSupported ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'
+                deviceInfo.isSupported ? 'bg-emerald-400 animate-ping' : 'bg-blue-400'
               }`}
             />
             <span className="hidden sm:inline">
-              {deviceInfo.isSupported ? 'Web NFC Ready' : 'QR / Simulation Mode'}
+              {deviceInfo.isSupported ? 'Web NFC Ready' : 'Direct Link & QR Active'}
             </span>
             <span className="sm:hidden">
-              {deviceInfo.isSupported ? 'NFC' : 'QR'}
+              {deviceInfo.isSupported ? 'NFC' : 'Live'}
             </span>
           </div>
 

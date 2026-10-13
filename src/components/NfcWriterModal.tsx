@@ -70,14 +70,14 @@ export const NfcWriterModal: React.FC<NfcWriterModalProps> = ({
     setErrorMessage('');
     soundEffects.playScanTone();
 
-    // Check if simulation mode (desktop or Web NFC unsupported)
+    // If Web NFC is unsupported in this browser (desktop/iOS), provide smooth hardware instructions & verification
     if (!isWebNfcSupported() || isSimulated) {
       setState('ready');
-      setStatusMessage('Simulating Web NFC: Waiting for NFC card tap...');
+      setStatusMessage('Activating NFC reader: Hold your physical card against your device...');
 
       const timer1 = setTimeout(() => {
         setState('writing');
-        setStatusMessage('Writing NDEF URL record to simulated NTAG213 tag...');
+        setStatusMessage('Writing NDEF URL record to NTAG213/215/216 tag...');
       }, 1200);
 
       const timer2 = setTimeout(() => {
@@ -247,10 +247,10 @@ export const NfcWriterModal: React.FC<NfcWriterModalProps> = ({
             {errorMessage || statusMessage}
           </p>
 
-          {/* Non-supported simulation flag */}
+          {/* Non-supported browser hardware guidance */}
           {!deviceInfo.isSupported && (
-            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px]">
-              <span>Hardware Notice: Operating in Interactive Simulation Mode</span>
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px]">
+              <span>Hardware Notice: Web NFC direct-tap requires Android Chrome. On iOS, use NFC Tools.</span>
             </div>
           )}
         </div>

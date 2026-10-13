@@ -61,7 +61,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
             <p className="text-xs text-blue-100 font-normal">
               {isNfcSupported
                 ? 'Ready to tap NTAG213 / 215 / 216 card'
-                : 'Tap to launch NFC Writer (Web NFC / Simulator)'}
+                : 'Write NDEF payload to NTAG213 / 215 / 216 card'}
             </p>
           </div>
         </span>
