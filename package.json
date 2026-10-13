@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && cd dist && git init && git checkout -b gh-pages && git add -A && git commit -m 'Deploy to GitHub Pages' && git remote add origin https://github.com/dayal-p/nfc-google-review-writer.git && git push -f origin gh-pages && rm -rf .git"
+    "deploy": "npm run build && cd dist && git init && git config user.name 'dayal-p' && git config user.email '337293239+dayal-p@users.noreply.github.com' && git checkout -b gh-pages && git add -A && git commit -m 'Deploy to GitHub Pages' && git remote add origin https://github.com/dayal-p/nfc-google-review-writer.git && git push -f origin gh-pages && rm -rf .git"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
