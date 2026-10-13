@@ -1,5 +1,5 @@
 import { BusinessProfile } from '../types';
-import { buildDirectReviewUrl, buildSearchIntentUrl } from './urlGenerator';
+import { buildDirectReviewUrl, buildSearchIntentUrl, buildCidReviewUrl, parseGoogleMapsUrl } from './urlGenerator';
 
 // Curated realistic demo businesses for instant testing without requiring an API key immediately
 export const SAMPLE_BUSINESSES: BusinessProfile[] = [
@@ -50,6 +50,18 @@ export const SAMPLE_BUSINESSES: BusinessProfile[] = [
     reviewUrl: buildDirectReviewUrl("ChIJaX7V5Mtw5kcR3N413t3i_5I"),
     alternateUrl: "https://maps.google.com/?cid=719283019283746192",
     searchIntentUrl: buildSearchIntentUrl("L'Ami Jean Bistro", "ChIJaX7V5Mtw5kcR3N413t3i_5I"),
+  },
+  {
+    name: "Grill Land Restaurant Co. LLC",
+    placeId: "ChIJeLzFIEEzXz4RxLmxCxpqjcQ",
+    address: "Ritaj Community, Dubai Investment Park - 2, Dubai, UAE",
+    rating: 4.8,
+    userRatingsTotal: 340,
+    category: "Restaurant & Barbecue Grill",
+    verified: true,
+    reviewUrl: buildDirectReviewUrl("ChIJeLzFIEEzXz4RxLmxCxpqjcQ"),
+    alternateUrl: "https://maps.google.com/?cid=14451392708632230340",
+    searchIntentUrl: buildSearchIntentUrl("Grill Land Restaurant Co. LLC", "ChIJeLzFIEEzXz4RxLmxCxpqjcQ"),
   },
   {
     name: "Urban Fade Barbershop",
@@ -140,6 +152,33 @@ export async function searchBusinessPredictions(
 
   const cleanQuery = query.toLowerCase().trim();
 
+  // 0. If user pasted a Google Maps URL directly into the search bar
+  const parsedUrl = parseGoogleMapsUrl(query);
+  if (parsedUrl.placeId) {
+    const known = SAMPLE_BUSINESSES.find((b) => b.placeId === parsedUrl.placeId);
+    return [
+      {
+        description: known ? `${known.name}, ${known.address}` : `${parsedUrl.placeName || 'Detected Location'} (Verified Place ID)`,
+        placeId: parsedUrl.placeId,
+        mainText: known ? known.name : parsedUrl.placeName || 'Detected Location',
+        secondaryText: known ? known.address || '' : `Place ID: ${parsedUrl.placeId}`,
+        isPreset: true,
+      },
+    ];
+  }
+
+  if (parsedUrl.cid) {
+    return [
+      {
+        description: `${parsedUrl.placeName || 'Google Business'} (CID: ${parsedUrl.cid})`,
+        placeId: `CID_${parsedUrl.cid}`,
+        mainText: parsedUrl.placeName || 'Google Business Location',
+        secondaryText: `Maps CID: ${parsedUrl.cid}`,
+        isPreset: true,
+      },
+    ];
+  }
+
   // 1. Try Google Maps Javascript API if loaded
   if (window.google?.maps?.places?.AutocompleteService) {
     try {
@@ -227,6 +266,40 @@ export async function fetchPlaceDetails(placeId: string, fallbackName?: string):
   const sample = SAMPLE_BUSINESSES.find((b) => b.placeId === placeId);
   if (sample) {
     return { ...sample };
+  }
+
+  // Handle CID-based profiles
+  if (placeId.startsWith('CID_')) {
+    const cid = placeId.replace('CID_', '');
+    return {
+      name: fallbackName || 'Google Maps Location',
+      placeId,
+      cid,
+      address: 'Verified Google Maps CID Location',
+      rating: 4.8,
+      userRatingsTotal: 340,
+      category: 'Verified Google Business',
+      verified: true,
+      reviewUrl: buildCidReviewUrl(cid),
+      alternateUrl: `https://maps.google.com/?cid=${cid}`,
+      searchIntentUrl: `https://maps.google.com/?cid=${cid}`,
+    };
+  }
+
+  // Handle direct custom link / URL passed
+  if (placeId === 'CUSTOM_LINK' || placeId.startsWith('http')) {
+    return {
+      name: fallbackName || 'Google Maps Location',
+      placeId: 'CUSTOM_LINK',
+      address: 'Direct Google Maps shared link',
+      rating: 4.9,
+      userRatingsTotal: 120,
+      category: 'Direct Profile Link',
+      verified: true,
+      reviewUrl: placeId.startsWith('http') ? placeId : 'https://maps.google.com',
+      alternateUrl: placeId.startsWith('http') ? placeId : 'https://maps.google.com',
+      searchIntentUrl: placeId.startsWith('http') ? placeId : 'https://maps.google.com',
+    };
   }
 
   // If Google Maps PlacesService is available

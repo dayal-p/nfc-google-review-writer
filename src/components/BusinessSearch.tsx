@@ -91,10 +91,11 @@ export const BusinessSearch: React.FC<BusinessSearchProps> = ({
     e.preventDefault();
     if (!manualPlaceId.trim()) return;
 
-    // Check if pasted value is a URL
-    const parsed = parseGoogleMapsUrl(manualPlaceId.trim());
+    const trimmed = manualPlaceId.trim();
+    const parsed = parseGoogleMapsUrl(trimmed);
+
     if (parsed.placeId) {
-      handleSelectPrediction(parsed.placeId, 'Custom Business Location');
+      handleSelectPrediction(parsed.placeId, parsed.placeName || 'Custom Business Location');
       setManualPlaceId('');
       setShowManualInput(false);
       return;
@@ -102,15 +103,16 @@ export const BusinessSearch: React.FC<BusinessSearchProps> = ({
 
     if (parsed.cid) {
       const profile: BusinessProfile = {
-        name: 'Custom Google Business (CID)',
+        name: parsed.placeName || 'Custom Google Business (CID)',
         placeId: `CID_${parsed.cid}`,
         cid: parsed.cid,
         verified: true,
         address: `Google Maps CID: ${parsed.cid}`,
-        rating: 5.0,
+        rating: 4.8,
         userRatingsTotal: 100,
         reviewUrl: buildCidReviewUrl(parsed.cid),
         alternateUrl: `https://maps.google.com/?cid=${parsed.cid}`,
+        searchIntentUrl: `https://maps.google.com/?cid=${parsed.cid}`,
       };
       onSelectProfile(profile);
       setManualPlaceId('');
@@ -118,8 +120,27 @@ export const BusinessSearch: React.FC<BusinessSearchProps> = ({
       return;
     }
 
-    // Direct string as placeId
-    handleSelectPrediction(manualPlaceId.trim(), 'Custom Business Location');
+    // If it is any web URL (e.g. maps.app.goo.gl shortlink, google share link, custom website)
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      const profile: BusinessProfile = {
+        name: parsed.placeName || 'Google Maps Location',
+        placeId: 'CUSTOM_LINK',
+        verified: true,
+        address: 'Direct Google Maps shared link',
+        rating: 4.9,
+        userRatingsTotal: 85,
+        reviewUrl: trimmed,
+        alternateUrl: trimmed,
+        searchIntentUrl: trimmed,
+      };
+      onSelectProfile(profile);
+      setManualPlaceId('');
+      setShowManualInput(false);
+      return;
+    }
+
+    // Direct alphanumeric string as placeId (e.g. ChIJ...)
+    handleSelectPrediction(trimmed, 'Custom Business Location');
     setManualPlaceId('');
     setShowManualInput(false);
   };
