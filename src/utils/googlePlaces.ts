@@ -4,6 +4,18 @@ import { buildDirectReviewUrl, buildSearchIntentUrl, buildCidReviewUrl, parseGoo
 // Curated realistic demo businesses for instant testing without requiring an API key immediately
 export const SAMPLE_BUSINESSES: BusinessProfile[] = [
   {
+    name: "Grill Land Restaurant Co. LLC",
+    placeId: "ChIJ58xlIENzXz4RxLmxCxqpjcg",
+    address: "Ritaj Community, Dubai Investment Park - 2, Dubai, UAE",
+    rating: 4.8,
+    userRatingsTotal: 340,
+    category: "Restaurant & Barbecue Grill",
+    verified: true,
+    reviewUrl: buildDirectReviewUrl("ChIJ58xlIENzXz4RxLmxCxqpjcg"),
+    alternateUrl: "https://maps.google.com/?cid=14451392708632230340",
+    searchIntentUrl: buildSearchIntentUrl("Grill Land Restaurant Co. LLC", "ChIJ58xlIENzXz4RxLmxCxqpjcg"),
+  },
+  {
     name: "Joe's Coffee & Bakery",
     placeId: "ChIJc-2jE_1ZwokRnA0EwR3g37o",
     address: "141 Waverly Pl, Greenwich Village, New York, NY 10014",
@@ -50,18 +62,6 @@ export const SAMPLE_BUSINESSES: BusinessProfile[] = [
     reviewUrl: buildDirectReviewUrl("ChIJaX7V5Mtw5kcR3N413t3i_5I"),
     alternateUrl: "https://maps.google.com/?cid=719283019283746192",
     searchIntentUrl: buildSearchIntentUrl("L'Ami Jean Bistro", "ChIJaX7V5Mtw5kcR3N413t3i_5I"),
-  },
-  {
-    name: "Grill Land Restaurant Co. LLC",
-    placeId: "ChIJeLzFIEEzXz4RxLmxCxpqjcQ",
-    address: "Ritaj Community, Dubai Investment Park - 2, Dubai, UAE",
-    rating: 4.8,
-    userRatingsTotal: 340,
-    category: "Restaurant & Barbecue Grill",
-    verified: true,
-    reviewUrl: buildDirectReviewUrl("ChIJeLzFIEEzXz4RxLmxCxpqjcQ"),
-    alternateUrl: "https://maps.google.com/?cid=14451392708632230340",
-    searchIntentUrl: buildSearchIntentUrl("Grill Land Restaurant Co. LLC", "ChIJeLzFIEEzXz4RxLmxCxpqjcQ"),
   },
   {
     name: "Urban Fade Barbershop",

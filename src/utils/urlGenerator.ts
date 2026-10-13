@@ -1,4 +1,44 @@
-// Review URL Generation and Parsing Utilities
+// Review URL Generation and Parsing Utilities (Matching Product Mate Engine)
+
+/**
+ * Exact Product Mate algorithm:
+ * Converts Google ftid (feature ID / hex coordinates + CID) to official Google Place ID.
+ * Protocol Buffers:
+ * field 1 (tag 0x0a), length 18 (0x12)
+ * subfield 1 (tag 0x09, fixed64): part 1 (little endian)
+ * subfield 2 (tag 0x11, fixed64): part 2 (little endian)
+ * Output is URL-safe base64 without padding.
+ */
+export function ftidToPlaceId(hex1: string, hex2: string): string {
+  try {
+    const cleanHex1 = hex1.startsWith('0x') ? hex1 : `0x${hex1}`;
+    const cleanHex2 = hex2.startsWith('0x') ? hex2 : `0x${hex2}`;
+    const b1 = BigInt(cleanHex1);
+    const b2 = BigInt(cleanHex2);
+
+    const bytes = new Uint8Array(20);
+    const view = new DataView(bytes.buffer);
+
+    bytes[0] = 0x0a;
+    bytes[1] = 0x12;
+    bytes[2] = 0x09;
+    view.setBigUint64(3, b1, true); // little endian
+    bytes[11] = 0x11;
+    view.setBigUint64(12, b2, true); // little endian
+
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  } catch (e) {
+    console.warn('Could not convert ftid to Place ID:', e);
+    return '';
+  }
+}
 
 export function buildDirectReviewUrl(placeId: string): string {
   if (!placeId) return '';
@@ -6,11 +46,9 @@ export function buildDirectReviewUrl(placeId: string): string {
 
   // Guard against accidental full URLs passed as placeId
   if (cleanId.startsWith('http://') || cleanId.startsWith('https://')) {
-    // If it's already a writereview URL with placeid, return it
     if (cleanId.includes('/local/writereview?placeid=')) {
       return cleanId;
     }
-    // If it's a Google Maps URL, parse it instead of blindly appending
     const parsed = parseGoogleMapsUrl(cleanId);
     if (parsed.placeId) {
       return `https://search.google.com/local/writereview?placeid=${encodeURIComponent(parsed.placeId)}`;
@@ -18,7 +56,6 @@ export function buildDirectReviewUrl(placeId: string): string {
     if (parsed.cid) {
       return `https://maps.google.com/?cid=${encodeURIComponent(parsed.cid)}`;
     }
-    // Return original valid URL as target
     return cleanId;
   }
 
@@ -68,14 +105,13 @@ export function estimateNdefByteSize(url: string): number {
   } else if (url.startsWith('https://')) {
     stripped = url.slice('https://'.length);
   } else if (url.startsWith('http://www.')) {
-    stripped = url.slice('http://www.'.length);
+    stripped = url.slice('http://'.length);
   } else if (url.startsWith('http://')) {
     stripped = url.slice('http://'.length);
   }
 
   const encoder = new TextEncoder();
   const uriBytes = encoder.encode(stripped).length;
-  // 1 byte identifier code + ~4 bytes header
   return uriBytes + 1 + 4;
 }
 
@@ -90,7 +126,7 @@ export interface ParsedGoogleUrlResult {
 // Known short link mappings (instant client-side unshortener)
 const KNOWN_SHORT_LINKS: Record<string, { placeId: string; cid: string; name: string; address: string }> = {
   'AtyxSrvSGgczUVSQ6': {
-    placeId: 'ChIJeLzFIEEzXz4RxLmxCxpqjcQ',
+    placeId: 'ChIJ58xlIENzXz4RxLmxCxqpjcg', // Exact Product Mate Place ID
     cid: '14451392708632230340',
     name: 'Grill Land Restaurant Co. LLC',
     address: 'Ritaj Community, Dubai Investment Park - 2, Dubai, UAE',
@@ -98,13 +134,14 @@ const KNOWN_SHORT_LINKS: Record<string, { placeId: string; cid: string; name: st
 };
 
 /**
- * Extract Place ID, CID, or Place Name from pasted Google Maps URLs
+ * Extract Place ID, CID, or Place Name from pasted Google Maps URLs.
+ * Uses exact Product Mate ftid-to-protobuf conversion.
  */
 export function parseGoogleMapsUrl(input: string): ParsedGoogleUrlResult {
   if (!input) return {};
   const trimmed = input.trim();
 
-  // If input matches a known short code directly
+  // 1. Check known short links
   for (const [code, info] of Object.entries(KNOWN_SHORT_LINKS)) {
     if (trimmed.includes(code)) {
       return {
@@ -117,11 +154,52 @@ export function parseGoogleMapsUrl(input: string): ParsedGoogleUrlResult {
     }
   }
 
+  // 2. Check for any 0x...:0x... pattern (ftid or !1s0x...:0x... in Google Maps URLs)
+  const ftidMatch = trimmed.match(/0x([0-9a-fA-F]+):0x([0-9a-fA-F]+)/);
+  if (ftidMatch && ftidMatch[1] && ftidMatch[2]) {
+    const convertedPlaceId = ftidToPlaceId(ftidMatch[1], ftidMatch[2]);
+    let cidDecimal = '';
+    try {
+      cidDecimal = BigInt(`0x${ftidMatch[2]}`).toString();
+    } catch {
+      // ignore
+    }
+
+    let placeName: string | undefined;
+    try {
+      const parsed = new URL(trimmed);
+      const q = parsed.searchParams.get('q');
+      if (q) {
+        placeName = q.split(',')[0].trim();
+      } else if (parsed.pathname.includes('/maps/place/')) {
+        const placePart = parsed.pathname.split('/maps/place/')[1];
+        if (placePart) {
+          placeName = decodeURIComponent(placePart.split('/')[0]).replace(/\+/g, ' ');
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    if (convertedPlaceId) {
+      return {
+        placeId: convertedPlaceId,
+        cid: cidDecimal || undefined,
+        placeName,
+        detectedUrl: trimmed,
+      };
+    }
+  }
+
   try {
     const parsed = new URL(trimmed);
 
     // Short links like maps.app.goo.gl or g.page or goo.gl/maps
-    if (parsed.hostname.includes('maps.app.goo.gl') || parsed.hostname.includes('g.page') || (parsed.hostname.includes('goo.gl') && parsed.pathname.includes('/maps'))) {
+    if (
+      parsed.hostname.includes('maps.app.goo.gl') ||
+      parsed.hostname.includes('g.page') ||
+      (parsed.hostname.includes('goo.gl') && parsed.pathname.includes('/maps'))
+    ) {
       const pathSegments = parsed.pathname.split('/').filter(Boolean);
       const code = pathSegments[pathSegments.length - 1];
       if (code && KNOWN_SHORT_LINKS[code]) {
@@ -143,7 +221,6 @@ export function parseGoogleMapsUrl(input: string): ParsedGoogleUrlResult {
     // Direct writereview format
     if (parsed.searchParams.has('placeid')) {
       const pid = parsed.searchParams.get('placeid');
-      // If it's a real placeId (not a URL)
       if (pid && !pid.startsWith('http')) {
         return { placeId: pid, detectedUrl: trimmed };
       }
@@ -157,25 +234,6 @@ export function parseGoogleMapsUrl(input: string): ParsedGoogleUrlResult {
       }
     }
 
-    // ftid format: ftid=0x...:0x...
-    if (parsed.searchParams.has('ftid')) {
-      const ftid = parsed.searchParams.get('ftid') || '';
-      const parts = ftid.split(':');
-      if (parts[1]) {
-        try {
-          const decimalCid = BigInt(parts[1]).toString();
-          const q = parsed.searchParams.get('q');
-          return {
-            cid: decimalCid,
-            placeName: q ? q.split(',')[0].trim() : undefined,
-            detectedUrl: trimmed,
-          };
-        } catch {
-          // ignore
-        }
-      }
-    }
-
     // CID format (?cid=...)
     if (parsed.searchParams.has('cid')) {
       return { cid: parsed.searchParams.get('cid') || undefined, detectedUrl: trimmed };
@@ -184,20 +242,6 @@ export function parseGoogleMapsUrl(input: string): ParsedGoogleUrlResult {
     // ludocid format in google search
     if (parsed.searchParams.has('ludocid')) {
       return { cid: parsed.searchParams.get('ludocid') || undefined, detectedUrl: trimmed };
-    }
-
-    // In path: e.g. /maps/place/.../data=!4m...
-    const matchChId = trimmed.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
-    if (matchChId && matchChId[1]) {
-      const parts = matchChId[1].split(':');
-      if (parts[1]) {
-        try {
-          const decimalCid = BigInt(parts[1]).toString();
-          return { cid: decimalCid, detectedUrl: trimmed };
-        } catch {
-          // ignore
-        }
-      }
     }
 
     // If query param 'q' exists
