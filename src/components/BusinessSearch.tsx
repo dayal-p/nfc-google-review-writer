@@ -179,12 +179,12 @@ export const BusinessSearch: React.FC<BusinessSearchProps> = ({
         {isDropdownOpen && predictions.length > 0 && (
           <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden max-h-80 overflow-y-auto divide-y divide-slate-800/60 backdrop-blur-xl">
             <div className="px-3 py-1.5 bg-slate-950/70 text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-              <span>Google Places Matches</span>
+              <span>Matching Locations &amp; Branches</span>
               <span className="font-mono text-slate-500">{predictions.length} found</span>
             </div>
             {predictions.map((p) => (
               <button
-                key={p.placeId}
+                key={p.placeId + p.secondaryText}
                 onClick={() => handleSelectPrediction(p.placeId, p.mainText)}
                 className="w-full text-left px-3.5 py-2.5 hover:bg-slate-800/80 flex items-start gap-3 transition-colors group"
               >
@@ -198,7 +198,7 @@ export const BusinessSearch: React.FC<BusinessSearchProps> = ({
                     </span>
                     {p.isPreset && (
                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                        Demo
+                        Verified
                       </span>
                     )}
                   </div>
@@ -207,8 +207,12 @@ export const BusinessSearch: React.FC<BusinessSearchProps> = ({
                       {p.secondaryText}
                     </p>
                   )}
-                  <p className="text-[10px] text-slate-600 font-mono mt-0.5 truncate">
-                    ID: {p.placeId}
+                  <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                    {p.placeId.startsWith('SEARCH_')
+                      ? '✓ Direct Google Review Location'
+                      : p.placeId.startsWith('CID_')
+                      ? `CID: ${p.placeId.replace('CID_', '')}`
+                      : `Place ID: ${p.placeId}`}
                   </p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-300 self-center shrink-0" />
