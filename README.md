@@ -4,6 +4,9 @@ A modern, full-stack, mobile-first Web application that generates direct Google 
 
 Inspired by the workflow and aesthetic of modern NFC review cards (like **Product Mate**), TapReview provides real-time card previews, high-contrast vector QR codes, multiple review link mechanics, acoustic and haptic feedback, and tag-locking protection.
 
+- **GitHub Repository:** [https://github.com/dayal-p/nfc-google-review-writer](https://github.com/dayal-p/nfc-google-review-writer)
+- **Live GitHub Web App:** [https://dayal-p.github.io/nfc-google-review-writer/](https://dayal-p.github.io/nfc-google-review-writer/)
+
 ---
 
 ## ✨ Features
